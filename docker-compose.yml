@@ -1,0 +1,25 @@
+volumes:
+  db-volume:
+  maildir: {}
+
+services:
+  php:
+    container_name: php
+    build:
+      context: .
+      dockerfile: ./docker/php/Dockerfile
+    volumes:
+      - ./src:/var/www/html/app
+  nginx:
+    image: nginx
+    container_name: nginx
+    build: 
+      context: .
+      dockerfile: ./docker/nginx/Dockerfile
+    ports:
+      - "8000:80"
+    volumes:
+    #/.srcを作業ディレクトリにマウント
+      - ./src:/var/www/html/app
+      
+  
