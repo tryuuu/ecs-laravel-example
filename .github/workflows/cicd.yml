@@ -1,0 +1,70 @@
+name: Deploy to ECS
+
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build-and-deploy-dev:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    # ECRにログイン
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    # PHPとNGINXのイメージをビルドしてECRにプッシュ
+    - name: Build, tag, and push PHP image to Amazon ECR
+      uses: docker/build-push-action@v2
+      with:
+        context: ./
+        file: ./docker/php/Dockerfile
+        push: true
+        tags: # ECRリポジトリ
+        platforms: linux/x86_64
+        
+    - name: Build, tag, and push NGINX image to Amazon ECR
+      uses: docker/build-push-action@v2
+      with:
+        context: ./
+        file: ./docker/nginx/Dockerfile
+        push: true
+        tags:  # ECRリポジトリ
+        platforms: linux/x86_64
+
+    # タスク定義を更新
+    - name: update ECS task definition with PHP image
+      id: update-php
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: .github/workflows/task.definition.json
+        container-name: php-container
+        image: # ECRリポジトリ(phpのイメージ)
+
+    - name: update ECS task definition with NGINX image
+      id: update-nginx
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: ${{ steps.update-php.outputs.task-definition }}
+        container-name: nginx-container
+        image: # ECRリポジトリ(nginxのイメージ)
+
+    - name: Deploy Amazon ECS task definition
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.update-nginx.outputs.task-definition }}
+        service: example-service
+        cluster: example-cluster
+
+
+
