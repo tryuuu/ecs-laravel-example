@@ -1,3 +1,9 @@
+## アプリケーションの構成
+
+![nippou drawio (5)](https://github.com/tryuuu/ecs-laravel-example/assets/113238295/84b515a4-0c80-47c9-82cc-603c0a92f18d)
+
+https://qiita.com/tryuuu/items/ac42e465917d9a3945ec
+
 ## ローカルでの実行
 
 コンテナのビルド
